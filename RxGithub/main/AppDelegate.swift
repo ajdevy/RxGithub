@@ -18,7 +18,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var container: Container!
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        
+
         // DI
         container = Container() { container in
             // Model
@@ -31,27 +31,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             container.register(CommentServicing.self) { _ in
                 CommentService()
             }
-            
+
             // ViewModel
-            container.register(SearchViewModeling.self) { r in
+            container.register(SearchViewModeling.self) { resolver in
                 SearchViewModel(
-                    network: r.resolve(Networking.self)!,
-                    gitHubService: r.resolve(GitHubServicing.self)!,
-                    commentService: r.resolve(CommentServicing.self)!)
+                        network: resolver.resolve(Networking.self)!,
+                        gitHubService: resolver.resolve(GitHubServicing.self)!,
+                        commentService: resolver.resolve(CommentServicing.self)!
+                )
             }
-            
+
             // Views
-            container.storyboardInitCompleted(UINavigationController.self) { _,_ in }
-            container.storyboardInitCompleted(SearchViewController.self) { r,c in
-                c.viewModel = r.resolve(SearchViewModeling.self)!
+            container.storyboardInitCompleted(UINavigationController.self) { _, _ in
             }
-            container.storyboardInitCompleted(ProfileViewController.self) { _,_ in }
-            container.storyboardInitCompleted(CommentsViewController.self) { _,_ in }
+            container.storyboardInitCompleted(SearchViewController.self) { resolver, controller in
+                controller.viewModel = resolver.resolve(SearchViewModeling.self)!
+                controller.dependencyResolver = resolver
+            }
+            container.storyboardInitCompleted(ProfileViewController.self) { _, _ in
+            }
+            container.storyboardInitCompleted(CommentsViewController.self) { _, _ in
+            }
         }
-        
+
         // Firebase
         FirebaseApp.configure()
-        
+
         // Initial Screen
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.backgroundColor = UIColor.white
@@ -60,7 +65,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let bundle = Bundle(for: SearchViewController.self)
         let storyboard = SwinjectStoryboard.create(name: "Main", bundle: bundle, container: container)
         window.rootViewController = storyboard.instantiateInitialViewController()
-        
+
         return true
     }
 

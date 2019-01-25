@@ -9,10 +9,11 @@
 import RxSwift
 
 protocol ProfileViewModeling {
-    
+
     // MARK: - Input
     var showCommentsDidTap: PublishSubject<Void> { get }
-    
+    var profile: GitHubUser { get }
+
     // MARK: - Output
     var image: Observable<UIImage> { get }
     var username: String { get }
@@ -20,28 +21,32 @@ protocol ProfileViewModeling {
 }
 
 class ProfileViewModel: ProfileViewModeling {
-    
+
     // MARK: - Input
     let showCommentsDidTap: PublishSubject<Void> = PublishSubject<Void>()
-    
+    var profile: GitHubUser
+
     // MARK: - Output
-    let image: Observable<UIImage>
-    let username: String
-    let showComments: Observable<CommentsViewModeling>
-    
-    init(network: Networking, user: GitHubUser, commentService: CommentServicing) {
+    var username: String
+    var image: Observable<UIImage>
+    var showComments: Observable<CommentsViewModeling>
+
+    init(network: Networking, profile: GitHubUser, commentService: CommentServicing) {
         let placeholder = #imageLiteral(resourceName: "user2")
+
+        self.profile = profile
+        self.username = profile.username
+
         image = Observable.just(placeholder)
-                .concat(network.image(url: user.avatarUrl))
+                .concat(network.image(url: self.profile.avatarUrl))
                 .observeOn(MainScheduler.instance)
                 .catchErrorJustReturn(placeholder)
-        
-        username = user.username
-        
-        showComments = showCommentsDidTap
-            .map { CommentsViewModel(
-                commentsService: commentService,
-                username: user.username) }
+
+        showComments = showCommentsDidTap.map {
+            CommentsViewModel(
+                    commentsService: commentService,
+                    username: profile.username
+            )
+        }
     }
-    
 }
